@@ -12,25 +12,20 @@ public class DateUtil {
     /**
      * Calculate experience in years between two dates.
      * 
-     * @param startDate the start date
-     * @param endDate   the end date
+     * @param startDate the start date of the experience period
+     * @param endDate   the end date of the experience period
      * @return the experience in years
      */
     public static long calculateExperienceInYears(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
-            throw new IllegalArgumentException("Both start date and end date must be provided");
+            throw new IllegalArgumentException("Both start and end dates are required");
         }
-        return ChronoUnit.YEARS.between(startDate, endDate);
-    }
 
-    /**
-     * Calculate experience in years between a start date and the current date.
-     * 
-     * @param startDate the start date
-     * @return the experience in years
-     */
-    public static long calculateExperienceInYears(LocalDate startDate) {
-        return calculateExperienceInYears(startDate, LocalDate.now());
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
+        }
+
+        return ChronoUnit.YEARS.between(startDate, endDate);
     }
 }
 ```
