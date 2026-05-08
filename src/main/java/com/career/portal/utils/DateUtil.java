@@ -2,7 +2,6 @@
 package com.career.portal.utils;
 
 import java.time.LocalDate;
-import java.time.Month;
 import java.time.temporal.ChronoUnit;
 
 public class DateUtil {
@@ -11,20 +10,15 @@ public class DateUtil {
 
     /**
      * Calculate experience in years between two dates.
-     * 
-     * @param startDate the start date of the experience period
-     * @param endDate   the end date of the experience period
+     *
+     * @param startDate the start date
+     * @param endDate   the end date
      * @return the experience in years
      */
     public static long calculateExperienceInYears(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
-            throw new IllegalArgumentException("Both start and end dates are required");
+            throw new IllegalArgumentException("Both start date and end date must be provided");
         }
-
-        if (startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException("Start date cannot be after end date");
-        }
-
         return ChronoUnit.YEARS.between(startDate, endDate);
     }
 }
