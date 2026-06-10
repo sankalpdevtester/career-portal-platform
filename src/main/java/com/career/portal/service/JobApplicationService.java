@@ -6,6 +6,7 @@ import com.career.portal.model.JobApplication;
 import com.career.portal.repository.JobApplicationRepository;
 import com.career.portal.repository.JobListingRepository;
 import com.career.portal.repository.UserRepository;
+import com.career.portal.utils.DateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,111 +22,54 @@ public class JobApplicationService {
 
     @Autowired
     public JobApplicationService(JobApplicationRepository jobApplicationRepository, 
-                                   JobListingRepository jobListingRepository, 
-                                   UserRepository userRepository) {
+                                  JobListingRepository jobListingRepository, 
+                                  UserRepository userRepository) {
         this.jobApplicationRepository = jobApplicationRepository;
         this.jobListingRepository = jobListingRepository;
         this.userRepository = userRepository;
     }
 
-    public JobApplication applyForJob(Long userId, Long jobListingId) {
+    public JobApplication applyForJob(Long userId, Long jobId) {
         User user = userRepository.findById(userId).orElse(null);
-        JobListing jobListing = jobListingRepository.findById(jobListingId).orElse(null);
+        JobListing jobListing = jobListingRepository.findById(jobId).orElse(null);
 
-        if (user == null || jobListing == null) {
+        if (user != null && jobListing != null) {
+            JobApplication jobApplication = new JobApplication();
+            jobApplication.setUser(user);
+            jobApplication.setJobListing(jobListing);
+            jobApplication.setApplicationDate(new Date());
+            jobApplication.setApplicationStatus("Pending");
+
+            return jobApplicationRepository.save(jobApplication);
+        } else {
             return null;
         }
-
-        JobApplication jobApplication = new JobApplication();
-        jobApplication.setUser(user);
-        jobApplication.setJobListing(jobListing);
-        jobApplication.setApplicationDate(new Date());
-
-        return jobApplicationRepository.save(jobApplication);
     }
 
-    public List<JobApplication> getJobApplicationsForUser(Long userId) {
-        return jobApplicationRepository.findByUser_Id(userId);
+    public List<JobApplication> getApplicationHistory(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+
+        if (user != null) {
+            return jobApplicationRepository.findByUser(user);
+        } else {
+            return null;
+        }
     }
 
-    public List<JobApplication> getJobApplicationsForJobListing(Long jobListingId) {
-        return jobApplicationRepository.findByJobListing_Id(jobListingId);
-    }
-}
-```
-
-```java
-// src/main/java/com/career/portal/repository/JobApplicationRepository.java
-package com.career.portal.repository;
-
-import com.career.portal.model.JobApplication;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
-
-@Repository
-public interface JobApplicationRepository extends JpaRepository<JobApplication, Long> {
-    List<JobApplication> findByUser_Id(Long userId);
-    List<JobApplication> findByJobListing_Id(Long jobListingId);
-}
-```
-
-```java
-// src/main/java/com/career/portal/model/JobApplication.java
-package com.career.portal.model;
-
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import java.util.Date;
-
-@Entity
-public class JobApplication {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
-    private User user;
-
-    @ManyToOne
-    private JobListing jobListing;
-
-    private Date applicationDate;
-
-    // Getters and setters
-    public Long getId() {
-        return id;
+    public JobApplication getJobApplication(Long applicationId) {
+        return jobApplicationRepository.findById(applicationId).orElse(null);
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public JobApplication updateApplicationStatus(Long applicationId, String status) {
+        JobApplication jobApplication = jobApplicationRepository.findById(applicationId).orElse(null);
 
-    public User getUser() {
-        return user;
-    }
+        if (jobApplication != null) {
+            jobApplication.setApplicationStatus(status);
+            jobApplication.setUpdatedDate(new Date());
 
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public JobListing getJobListing() {
-        return jobListing;
-    }
-
-    public void setJobListing(JobListing jobListing) {
-        this.jobListing = jobListing;
-    }
-
-    public Date getApplicationDate() {
-        return applicationDate;
-    }
-
-    public void setApplicationDate(Date applicationDate) {
-        this.applicationDate = applicationDate;
+            return jobApplicationRepository.save(jobApplication);
+        } else {
+            return null;
+        }
     }
 }
