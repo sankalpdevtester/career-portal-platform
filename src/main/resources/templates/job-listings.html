@@ -7,32 +7,50 @@
 <body>
     <div class="container">
         <h1>Job Listings</h1>
-        <form th:action="@{/job-listings/search}" method="get">
-            <input type="text" name="keyword" placeholder="Search job listings">
-            <button type="submit">Search</button>
+        <form th:action="@{/job-listings}" method="get">
+            <div class="form-group">
+                <label for="search">Search:</label>
+                <input type="text" id="search" name="search" th:value="${search}" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="location">Location:</label>
+                <input type="text" id="location" name="location" th:value="${location}" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="category">Category:</label>
+                <input type="text" id="category" name="category" th:value="${category}" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Search</button>
         </form>
-        <form th:action="@{/job-listings/filter}" method="get">
-            <input type="text" name="location" placeholder="Location">
-            <input type="text" name="industry" placeholder="Industry">
-            <button type="submit">Filter</button>
-        </form>
-        <table class="table">
+        <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Job Title</th>
+                    <th>Title</th>
                     <th>Location</th>
-                    <th>Industry</th>
+                    <th>Category</th>
                 </tr>
             </thead>
-            <tbody th:each="jobListing : ${jobListings}">
-                <tr>
-                    <td th:text="${jobListing.title}">Job Title</td>
+            <tbody>
+                <tr th:each="jobListing : ${jobListings}">
+                    <td th:text="${jobListing.title}">Title</td>
                     <td th:text="${jobListing.location}">Location</td>
-                    <td th:text="${jobListing.industry}">Industry</td>
-                    <td><a th:href="@{/job-listings/{id}(id=${jobListing.id})}">View Details</a></td>
+                    <td th:text="${jobListing.category}">Category</td>
                 </tr>
             </tbody>
         </table>
+        <div th:if="${jobListings.totalPages > 1}">
+            <ul class="pagination">
+                <li th:class="${jobListings.number == 0 ? 'disabled' : ''}">
+                    <a th:href="@{/job-listings(page=${jobListings.number - 1})}">Previous</a>
+                </li>
+                <li th:each="i : ${#numbers.sequence(0, jobListings.totalPages - 1)}" th:class="${i == jobListings.number ? 'active' : ''}">
+                    <a th:href="@{/job-listings(page=${i})}" th:text="${i + 1}">1</a>
+                </li>
+                <li th:class="${jobListings.number == jobListings.totalPages - 1 ? 'disabled' : ''}">
+                    <a th:href="@{/job-listings(page=${jobListings.number + 1})}">Next</a>
+                </li>
+            </ul>
+        </div>
     </div>
 </body>
 </html>
