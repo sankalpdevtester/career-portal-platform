@@ -11,15 +11,12 @@ import java.util.List;
 @Repository
 public interface JobListingRepository extends JpaRepository<JobListing, Long> {
 
-    @Query("SELECT j FROM JobListing j WHERE j.title LIKE %:keyword% OR j.description LIKE %:keyword%")
-    List<JobListing> findByTitleContainingOrDescriptionContaining(@Param("keyword") String keyword);
+    @Query("SELECT j FROM JobListing j WHERE j.title LIKE %:search% OR j.description LIKE %:search% OR j.location LIKE %:search%")
+    Page<JobListing> findByTitleContainingOrDescriptionContainingOrLocationContaining(@Param("search") String search, Pageable pageable);
 
-    @Query("SELECT j FROM JobListing j WHERE j.location = :location AND j.industry = :industry")
-    List<JobListing> findByLocationAndIndustry(@Param("location") String location, @Param("industry") String industry);
+    @Query("SELECT j FROM JobListing j WHERE j.location LIKE %:location%")
+    Page<JobListing> findByLocationContaining(@Param("location") String location, Pageable pageable);
 
-    @Query("SELECT j FROM JobListing j WHERE j.title LIKE %:keyword% OR j.description LIKE %:keyword%")
-    Page<JobListing> findByTitleContainingOrDescriptionContaining(@Param("keyword") String keyword, Pageable pageable);
-
-    @Query("SELECT j FROM JobListing j WHERE j.location = :location AND j.industry = :industry")
-    Page<JobListing> findByLocationAndIndustry(@Param("location") String location, @Param("industry") String industry, Pageable pageable);
+    @Query("SELECT j FROM JobListing j WHERE j.category LIKE %:category%")
+    Page<JobListing> findByCategoryContaining(@Param("category") String category, Pageable pageable);
 }
