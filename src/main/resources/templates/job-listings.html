@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Job Listings</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+<body>
+    <div class="container">
+        <h1>Job Listings</h1>
+        <form th:action="@{/job-listings/search}" method="get">
+            <input type="text" name="keyword" placeholder="Search job listings">
+            <button type="submit">Search</button>
+        </form>
+        <form th:action="@{/job-listings/filter}" method="get">
+            <input type="text" name="location" placeholder="Location">
+            <input type="text" name="industry" placeholder="Industry">
+            <button type="submit">Filter</button>
+        </form>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Job Title</th>
+                    <th>Location</th>
+                    <th>Industry</th>
+                </tr>
+            </thead>
+            <tbody th:each="jobListing : ${jobListings}">
+                <tr>
+                    <td th:text="${jobListing.title}">Job Title</td>
+                    <td th:text="${jobListing.location}">Location</td>
+                    <td th:text="${jobListing.industry}">Industry</td>
+                    <td><a th:href="@{/job-listings/{id}(id=${jobListing.id})}">View Details</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
