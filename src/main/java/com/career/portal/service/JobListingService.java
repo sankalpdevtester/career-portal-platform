@@ -15,23 +15,27 @@ public class JobListingService {
     @Autowired
     private JobListingRepository jobListingRepository;
 
-    public Page<JobListing> getJobListings(Pageable pageable) {
-        return jobListingRepository.findAll(pageable);
+    public Page<JobListing> getJobListings(Pageable pageable, String search, String location, String category) {
+        if (search != null && !search.isEmpty()) {
+            return jobListingRepository.findByTitleContainingOrDescriptionContainingOrLocationContaining(search, search, search, pageable);
+        } else if (location != null && !location.isEmpty()) {
+            return jobListingRepository.findByLocationContaining(location, pageable);
+        } else if (category != null && !category.isEmpty()) {
+            return jobListingRepository.findByCategoryContaining(category, pageable);
+        } else {
+            return jobListingRepository.findAll(pageable);
+        }
     }
 
     public JobListing getJobListingById(Long id) {
         return jobListingRepository.findById(id).orElse(null);
     }
 
-    public Page<JobListing> searchJobListings(String keyword, Pageable pageable) {
-        return jobListingRepository.findByTitleContainingOrDescriptionContaining(keyword, keyword, pageable);
-    }
-
-    public Page<JobListing> filterJobListings(String location, String industry, Pageable pageable) {
-        return jobListingRepository.findByLocationAndIndustry(location, industry, pageable);
-    }
-
     public void createJobListing(JobListing jobListing) {
         jobListingRepository.save(jobListing);
+    }
+
+    public List<JobListing> getAllJobListings() {
+        return jobListingRepository.findAll();
     }
 }
