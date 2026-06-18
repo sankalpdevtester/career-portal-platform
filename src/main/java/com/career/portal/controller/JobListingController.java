@@ -29,10 +29,16 @@ public class JobListingController {
 
     @GetMapping("/job-listings")
     public String getJobListings(Model model, @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-                                  @RequestParam(name = "size", required = false, defaultValue = "10") int size) {
+                                  @RequestParam(name = "size", required = false, defaultValue = "10") int size,
+                                  @RequestParam(name = "search", required = false) String search,
+                                  @RequestParam(name = "location", required = false) String location,
+                                  @RequestParam(name = "category", required = false) String category) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<JobListing> jobListings = jobListingService.getJobListings(pageable);
+        Page<JobListing> jobListings = jobListingService.getJobListings(pageable, search, location, category);
         model.addAttribute("jobListings", jobListings);
+        model.addAttribute("search", search);
+        model.addAttribute("location", location);
+        model.addAttribute("category", category);
         return "job-listings";
     }
 
@@ -43,30 +49,15 @@ public class JobListingController {
         return "job-listing-details";
     }
 
-    @GetMapping("/job-listings/search")
-    public String searchJobListings(@RequestParam(name = "keyword") String keyword, Model model,
-                                     @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-                                     @RequestParam(name = "size", required = false, defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<JobListing> jobListings = jobListingService.searchJobListings(keyword, pageable);
-        model.addAttribute("jobListings", jobListings);
-        return "job-listings";
-    }
-
-    @GetMapping("/job-listings/filter")
-    public String filterJobListings(@RequestParam(name = "location") String location,
-                                    @RequestParam(name = "industry") String industry, Model model,
-                                    @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-                                    @RequestParam(name = "size", required = false, defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<JobListing> jobListings = jobListingService.filterJobListings(location, industry, pageable);
-        model.addAttribute("jobListings", jobListings);
-        return "job-listings";
-    }
-
     @PostMapping("/job-listings")
     public String createJobListing(@ModelAttribute JobListing jobListing) {
         jobListingService.createJobListing(jobListing);
         return "redirect:/job-listings";
+    }
+
+    @GetMapping("/job-listings/create")
+    public String createJobListingForm(Model model) {
+        model.addAttribute("jobListing", new JobListing());
+        return "create-job-listing";
     }
 }
