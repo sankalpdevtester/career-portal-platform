@@ -6,66 +6,101 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Utility class for caching job listings with a time-to-live (TTL) of 30 minutes.
+ */
 @Component
 public class JobListingCacheUtil {
 
-    private final ConcurrentMap<String, JobListing> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JobListing> cache;
     private final JobListingRepository jobListingRepository;
 
     @Autowired
     public JobListingCacheUtil(JobListingRepository jobListingRepository) {
+        this.cache = new ConcurrentHashMap<>();
         this.jobListingRepository = jobListingRepository;
     }
 
-    public JobListing getJobListingFromCache(String id) {
-        return cache.get(id);
+    /**
+     * Retrieves a job listing from the cache or database.
+     *
+     * @param id the ID of the job listing
+     * @return the job listing
+     */
+    public JobListing getJobListing(String id) {
+        return cache.computeIfAbsent(id, this::loadJobListingFromDatabase);
     }
 
-    public void putJobListingInCache(String id, JobListing jobListing) {
-        cache.put(id, jobListing);
-    }
-
-    public void removeJobListingFromCache(String id) {
-        cache.remove(id);
-    }
-
-    public void invalidateCache() {
-        cache.clear();
-    }
-
-    public JobListing getJobListingWithCache(String id) {
-        JobListing jobListing = getJobListingFromCache(id);
+    /**
+     * Loads a job listing from the database and caches it with a TTL of 30 minutes.
+     *
+     * @param id the ID of the job listing
+     * @return the job listing
+     */
+    private JobListing loadJobListingFromDatabase(String id) {
+        JobListing jobListing = jobListingRepository.findById(id).orElse(null);
         if (jobListing != null) {
-            return jobListing;
-        } else {
-            jobListing = jobListingRepository.findById(id).orElse(null);
-            if (jobListing != null) {
-                putJobListingInCache(id, jobListing);
-            }
-            return jobListing;
+            cache.put(id, jobListing);
+            // Set TTL to 30 minutes
+            scheduleCacheEviction(id, 30, TimeUnit.MINUTES);
         }
+        return jobListing;
     }
 
-    public void scheduleCacheInvalidation(String id, long ttl, TimeUnit timeUnit) {
-        new Thread(() -> {
+    /**
+     * Schedules the eviction of a job listing from the cache after a specified delay.
+     *
+     * @param id     the ID of the job listing
+     * @param delay  the delay before eviction
+     * @param unit   the time unit of the delay
+     */
+    private void scheduleCacheEviction(String id, long delay, TimeUnit unit) {
+        // Use a ScheduledExecutorService to schedule the eviction
+        // For simplicity, we'll use a simple Thread here
+        Thread thread = new Thread(() -> {
             try {
-                timeUnit.sleep(ttl);
-                removeJobListingFromCache(id);
+                unit.sleep(delay);
+                cache.remove(id);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        }).start();
+        });
+        thread.setDaemon(true); // Allow the JVM to exit even if the thread is still running
+        thread.start();
     }
 
-    public void cacheJobListing(JobListing jobListing) {
-        putJobListingInCache(jobListing.getId(), jobListing);
-        scheduleCacheInvalidation(jobListing.getId(), 30, TimeUnit.MINUTES);
+    /**
+     * Clears the cache.
+     */
+    public void clearCache() {
+        cache.clear();
+    }
+}
+```
+```java
+// Example usage in JobListingController
+package com.career.portal.controller;
+
+import com.career.portal.utils.JobListingCacheUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class JobListingController {
+
+    private final JobListingCacheUtil jobListingCacheUtil;
+
+    @Autowired
+    public JobListingController(JobListingCacheUtil jobListingCacheUtil) {
+        this.jobListingCacheUtil = jobListingCacheUtil;
     }
 
-    public void cacheJobListings(Iterable<JobListing> jobListings) {
-        jobListings.forEach(this::cacheJobListing);
+    @GetMapping("/job-listings/{id}")
+    public JobListing getJobListing(@PathVariable String id) {
+        return jobListingCacheUtil.getJobListing(id);
     }
 }
