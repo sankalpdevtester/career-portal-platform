@@ -10,45 +10,52 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class JobListingCacheUtil {
 
-    // Cache to store job listings with TTL
-    private ConcurrentHashMap<Long, JobListing> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JobListing> cache;
+    private final ConcurrentHashMap<String, Long> cacheExpiration;
+
+    public JobListingCacheUtil() {
+        this.cache = new ConcurrentHashMap<>();
+        this.cacheExpiration = new ConcurrentHashMap<>();
+    }
 
     /**
-     * Retrieves a job listing from the cache if it exists and is not expired.
+     * Adds a job listing to the cache with a TTL of 30 minutes.
      *
-     * @param id Job listing ID
-     * @return Job listing if cached, otherwise null
+     * @param jobListing the job listing to cache
      */
-    public JobListing getJobListingFromCache(Long id) {
-        if (cache.containsKey(id)) {
-            JobListing jobListing = cache.get(id);
-            if (DateUtil.isWithinTTL(jobListing.getCacheTimestamp(), 30, TimeUnit.MINUTES)) {
-                return jobListing;
+    public void addJobListingToCache(JobListing jobListing) {
+        String jobId = String.valueOf(jobListing.getId());
+        cache.put(jobId, jobListing);
+        cacheExpiration.put(jobId, System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(30));
+    }
+
+    /**
+     * Retrieves a job listing from the cache if it exists and has not expired.
+     *
+     * @param jobId the ID of the job listing to retrieve
+     * @return the cached job listing, or null if it does not exist or has expired
+     */
+    public JobListing getJobListingFromCache(String jobId) {
+        if (cache.containsKey(jobId)) {
+            if (System.currentTimeMillis() < cacheExpiration.get(jobId)) {
+                return cache.get(jobId);
             } else {
-                // Remove expired job listing from cache
-                cache.remove(id);
+                // Cache has expired, remove it
+                cache.remove(jobId);
+                cacheExpiration.remove(jobId);
             }
         }
         return null;
     }
 
     /**
-     * Adds a job listing to the cache with a TTL of 30 minutes.
-     *
-     * @param jobListing Job listing to cache
-     */
-    public void addJobListingToCache(JobListing jobListing) {
-        jobListing.setCacheTimestamp(DateUtil.getCurrentTimestamp());
-        cache.put(jobListing.getId(), jobListing);
-    }
-
-    /**
      * Removes a job listing from the cache.
      *
-     * @param id Job listing ID
+     * @param jobId the ID of the job listing to remove
      */
-    public void removeJobListingFromCache(Long id) {
-        cache.remove(id);
+    public void removeJobListingFromCache(String jobId) {
+        cache.remove(jobId);
+        cacheExpiration.remove(jobId);
     }
 
     /**
@@ -56,6 +63,25 @@ public class JobListingCacheUtil {
      */
     public void clearCache() {
         cache.clear();
+        cacheExpiration.clear();
+    }
+
+    public static void main(String[] args) {
+        JobListingCacheUtil cacheUtil = new JobListingCacheUtil();
+        JobListing jobListing = new JobListing();
+        jobListing.setId(1L);
+        jobListing.setTitle("Software Engineer");
+        jobListing.setDescription("Develop software applications");
+
+        cacheUtil.addJobListingToCache(jobListing);
+
+        JobListing cachedJobListing = cacheUtil.getJobListingFromCache(String.valueOf(jobListing.getId()));
+        System.out.println("Cached Job Listing: " + cachedJobListing);
+
+        cacheUtil.removeJobListingFromCache(String.valueOf(jobListing.getId()));
+        cachedJobListing = cacheUtil.getJobListingFromCache(String.valueOf(jobListing.getId()));
+        System.out.println("Cached Job Listing after removal: " + cachedJobListing);
+
+        cacheUtil.clearCache();
     }
 }
-``}
